@@ -1,6 +1,6 @@
-import {App, PluginSettingTab, Setting} from "obsidian";
-import MyPlugin from "./main";
-
+/* import {App, PluginSettingTab, Setting} from "obsidian";
+import MyPlugin from "./main"; */
+/* 
 export interface MyPluginSettings {
 	mySetting: string;
 }
@@ -34,3 +34,4 @@ export class SampleSettingTab extends PluginSettingTab {
 				}));
 	}
 }
+ */
