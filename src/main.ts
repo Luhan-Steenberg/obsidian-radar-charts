@@ -1,4 +1,4 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin, QueryController, BasesView, parsePropertyId, HoverPopover, HoverParent, NumberValue} from 'obsidian';
+import {App, Editor, MarkdownView, Modal, Notice, Plugin, QueryController, BasesView, parsePropertyId, HoverPopover, HoverParent, NumberValue, BasesPropertyType} from 'obsidian';
 /* import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
  */
 import {Chart, ChartConfiguration, RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
@@ -33,14 +33,14 @@ export default class MyPlugin extends Plugin {
 			min: 3,
 			max: 12
 		},
-		{
+/* 		{
 			type: 'slider', 
 			displayName: 'Radar Chart Width',
 			key: 'chartWidth',
 			default: 200,
 			min: 50, 
 			max: 800,
-		}
+		} */
 	  ])
     });
 
@@ -194,7 +194,7 @@ export class MyBasesView extends BasesView implements HoverParent
  * @param {any} value - The value to display.
  * @param {string} type - The type of item (used for conditional styling).
  */
-function createRadarProperty(container:HTMLElement, name, value, type) {
+function createRadarProperty(container: HTMLElement, name: string, value: any, type: BasesPropertyType) {
 	const propEl = container.createDiv('bases-radar-property');
 
 	propEl.createDiv({
