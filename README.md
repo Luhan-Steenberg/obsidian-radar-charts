@@ -2,9 +2,7 @@
 
  A new view for obsidian bases that adds a simple radar chart. Modelled after the obsidian cards view. The goal is to keep it simple, make it usable, and not require any more configuration than other base views. 
 
- <img src="Assets/Radar Chart View.png" alt="The view of the chart" width="600"> 
- <img src="Assets/View Configuration.png" alt="The configuration menu for the view" width="600"> 
- <img src="Assets/Properties Config.png" alt="The property configuration" width="600">
+ <img src="Assets/Radar Chart View.png" alt="The view of the chart" width="300"> <img src="Assets/View Configuration.png" alt="The configuration menu for the view" width="300"> <img src="Assets/Properties Config.png" alt="The property configuration" width="300">
 
 
 
