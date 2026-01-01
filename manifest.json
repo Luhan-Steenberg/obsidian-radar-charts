@@ -1,9 +1,9 @@
 {
 	"id": "bases-radar-chart",
 	"name": "Bases Radar Chart",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Adds a view option for obsidian bases as a radar chart",
+	"description": "Adds a bases view that renders a radar chart from numeric data",
 	"author": "Luhan Steenberg",
 	"authorUrl": "https://obsidian.md",
 	"fundingUrl": "https://obsidian.md/pricing",

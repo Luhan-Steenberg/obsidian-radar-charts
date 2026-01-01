@@ -71,7 +71,7 @@ export class MyBasesView extends BasesView implements HoverParent
 		this.containerEl.empty(); // I would like to not rely on this I think
 
 		const radarContainer = this.containerEl;
-		const containerWidth = this.config.get('chartWidth') as number;
+		const containerWidth = this.config.get('chartWidth');
 
 		for (const group of this.data.groupedData) 
 		{ // Handles the "grouping" of entries through the bases view. If no groups set; returns one group
@@ -79,7 +79,7 @@ export class MyBasesView extends BasesView implements HoverParent
 			// TODO: Handling for group headers
 
 			const cardsGrid = radarContainer.createDiv('bases-radar-grid');
-
+			
 			for (const entry of group.entries) 
 			{ // Each group.entries is each row in the bases view (ie. one note)
 				
@@ -88,7 +88,7 @@ export class MyBasesView extends BasesView implements HoverParent
 				const canvas = cardItem.createEl('canvas', { 
                     cls: 'bases-radar-chart' 
 				});
-				canvas.width = containerWidth;
+				canvas.width = containerWidth as number;
 
 				const divisions = this.config.get('divisions') as number;
 
@@ -181,7 +181,6 @@ export class MyBasesView extends BasesView implements HoverParent
 				}
 				
 				new Chart(canvas, config);
-
 			}
 		}
 	}

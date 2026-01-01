@@ -16,35 +16,41 @@ If your plugin does not need CSS, delete this file.
 
 .bases-radar-grid {
     display: grid;
+
     /* This magic line creates columns that automatically fill the space */
     /* It creates as many 300px columns as will fit, then stretches them */
+
     grid-template-columns: repeat(auto-fill, minmax(200px, 400px)); 
+
+    /* COMMENTED OUT TO WORK ON LAYOUT ENGINE
     gap: 12px;
     padding: 4px;
+    */
 }
 
 .bases-radar-item {
     display: flex;             /* Enable Flexbox */
     flex-direction: column;    /* Stack children vertically */
 
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
+    transition: box-shadow var(--anim-duration-fast) ease-in-out;
+
+    border-radius: var(--radius-m); /* Sets the rounded corners */
     background-color: var(--bases-cards-background);
     box-shadow: var(--bases-cards-shadow);
-
+ 
     overflow: hidden;
+    /*contain: strict;*/
 }
 
 .bases-radar-property {
-    padding: 8px 12px;
-    border-top: 1px solid var(--background-modifier-border);
-}
+    padding: var(--size-4-2);
+/*     border-top: 1px solid var(--background-modifier-border);
+ */}
 
 .bases-radar-label {
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-light);
     color: var(--text-muted);
-    padding: 0px 0px;
+    font-size: var(--font-ui-smaller);
+    padding: var(--size-4-2);
 }
 .null-value{
     color: var(--text-faint);
