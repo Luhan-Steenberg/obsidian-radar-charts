@@ -9,29 +9,24 @@ If your plugin does not need CSS, delete this file.
 
 .bases-radar-container {
     background-color: var(--background-primary);
-    padding: 10px;
-    overflow: hidden;
+    padding: var(--size-4-3);
 }
 
 
 .bases-radar-grid {
-    display: grid;
-
-    /* This magic line creates columns that automatically fill the space */
-    /* It creates as many 300px columns as will fit, then stretches them */
-
-    grid-template-columns: repeat(auto-fill, minmax(200px, 400px)); 
-
-    /* COMMENTED OUT TO WORK ON LAYOUT ENGINE
-    gap: 12px;
-    padding: 4px;
-    */
+    position: relative;
+    width: 100%;
 }
 
 .bases-radar-item {
     display: flex;             /* Enable Flexbox */
     flex-direction: column;    /* Stack children vertically */
 
+    position: absolute;
+    box-sizing: border-box;
+    /* width will be set by JS */
+
+    will-change: transform;
     transition: box-shadow var(--anim-duration-fast) ease-in-out;
 
     border-radius: var(--radius-m); /* Sets the rounded corners */
@@ -44,23 +39,35 @@ If your plugin does not need CSS, delete this file.
 
 .bases-radar-property {
     padding: var(--size-4-2);
-/*     border-top: 1px solid var(--background-modifier-border);
- */}
+/*     border-top: 1px solid var(--background-modifier-border);*/
+}
 
 .bases-radar-label {
     color: var(--text-muted);
     font-size: var(--font-ui-smaller);
-    padding: var(--size-4-2);
+    /* padding: var(--size-4-2);
+} */
 }
 .null-value{
     color: var(--text-faint);
     font-weight: var(--font-semibold);
 }
 .bases-radar-line {
-    padding: 2px 8px;
+/* 1. Define the display mode that supports line clamping */
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.bases-radar-chart {
+.bases-radar-line .longText{
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.radar-chart-container {
     aspect-ratio: 1 / 1;
     background-color: var(--bases-cards-cover-background);
 }
