@@ -9,52 +9,82 @@ If your plugin does not need CSS, delete this file.
 
 .bases-radar-container {
     background-color: var(--background-primary);
-    padding: 10px;
-    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
+    padding: var(--size-4-3);
 }
 
 
 .bases-radar-grid {
     display: grid;
-    /* This magic line creates columns that automatically fill the space */
-    /* It creates as many 300px columns as will fit, then stretches them */
-    grid-template-columns: repeat(auto-fill, minmax(200px, 400px)); 
+    grid-template-columns: repeat(auto-fill, minmax(var(--chart-width, 200px), 1fr));
     gap: 12px;
-    padding: 4px;
+    width: 100%;
 }
 
 .bases-radar-item {
     display: flex;             /* Enable Flexbox */
     flex-direction: column;    /* Stack children vertically */
 
-    border: 1px solid var(--background-modifier-border);
-    border-radius: var(--radius-m);
+    position: relative;
+    box-sizing: border-box;
+    /* width will be set by JS */
+
+    transition: box-shadow var(--anim-duration-fast) ease-in-out;
+
+    border-radius: var(--radius-m); /* Sets the rounded corners */
     background-color: var(--bases-cards-background);
     box-shadow: var(--bases-cards-shadow);
-
+ 
     overflow: hidden;
+    height: auto;
+    /*contain: strict;*/
 }
 
 .bases-radar-property {
-    padding: 8px 12px;
-    border-top: 1px solid var(--background-modifier-border);
+    padding: var(--size-4-2);
+/*     border-top: 1px solid var(--background-modifier-border);*/
 }
 
 .bases-radar-label {
-    font-size: var(--font-ui-small);
-    font-weight: var(--font-light);
     color: var(--text-muted);
-    padding: 0px 0px;
+    font-size: var(--font-ui-smaller);
+    /* padding: var(--size-4-2);
+} */
 }
 .null-value{
     color: var(--text-faint);
     font-weight: var(--font-semibold);
 }
 .bases-radar-line {
-    padding: 2px 8px;
+/* 1. Define the display mode that supports line clamping */
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.bases-radar-line .longText{
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.radar-chart-container {
+    width: 100%;
+    aspect-ratio: 1 / 1; 
+    position: relative;
+    overflow: hidden;
+    display: block;
 }
 
 .bases-radar-chart {
-    aspect-ratio: 1 / 1;
-    background-color: var(--bases-cards-cover-background);
+    /* Absolute positioning breaks the resize loop */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
 }

@@ -1,11 +1,61 @@
-import {App, Editor, MarkdownView, Modal, Notice, Plugin, QueryController, BasesView, parsePropertyId, HoverPopover, HoverParent, NumberValue, BasesPropertyType} from 'obsidian';
-/* import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings";
- */
+import {App, Editor, MarkdownView, Modal, Notice, Plugin, QueryController, BasesView, parsePropertyId, HoverPopover, HoverParent, NumberValue, BasesPropertyType, debounce} from 'obsidian';
+/* import {DEFAULT_SETTINGS, MyPluginSettings, SampleSettingTab} from "./settings"; */
 import {Chart, ChartConfiguration, RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
 
-Chart.register( RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
+interface RadarCard {
+    id: string; // Unique ID (usually file path)
+    
+    // 1. Data for the Chart.js canvas
+    chartConfig: ChartConfiguration;
+    
+    // 2. Data for the list of properties below the chart
+    listItems: {
+        name: string;
+        value: string;
+        type: string;
+    }[];
 
-export const radarView = 'Radar';
+    // 3. Layout State (For your future Masonry engine)
+    layout: {
+        x: number;
+        y: number;
+        width: number;
+        height: number; // Will be 0 until first render
+    };
+
+	 el? : HTMLElement;
+}
+
+interface InterfaceColors {
+  bodyStyles: CSSStyleDeclaration;
+  bgPrimary: string;
+  bgSecondary: string;
+  accentColor: string;
+  accentColor1: string;
+  accentColor2: string;
+  gridColor: string;
+  accentColor2HSLA: string;
+}
+
+const bodyStyles: CSSStyleDeclaration = window.getComputedStyle(document.body);
+
+const interfaceColors: InterfaceColors = {
+  bodyStyles,
+  bgPrimary: bodyStyles.getPropertyValue('--background-primary').trim(),
+  bgSecondary: bodyStyles.getPropertyValue('--background-secondary').trim(),
+  accentColor: bodyStyles.getPropertyValue('--color-accent-hsl').trim(),
+  accentColor1: bodyStyles.getPropertyValue('--color-accent-1').trim(),
+  accentColor2: bodyStyles.getPropertyValue('--color-accent-2').trim(),
+  gridColor: bodyStyles.getPropertyValue('--text-faint').trim(),
+  accentColor2HSLA: bodyStyles
+    .getPropertyValue('--color-accent-2')
+    .trim()
+    .replace('hsl', 'hsla')
+    .replace(/\)\s*$/, `, 0.6)`),
+};
+
+Chart.register( RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend); // Registers chart with chart.js
+export const radarView = 'Radar'; /* For registering the chart with obsidian */
 
 export default class MyPlugin extends Plugin {
   async onload() {
@@ -33,14 +83,14 @@ export default class MyPlugin extends Plugin {
 			min: 3,
 			max: 12
 		},
-/* 		{
+		{
 			type: 'slider', 
-			displayName: 'Radar Chart Width',
+			displayName: 'Card Width',
 			key: 'chartWidth',
 			default: 200,
 			min: 50, 
 			max: 800,
-		} */
+		}
 	  ])
     });
 
@@ -56,169 +106,182 @@ export class MyBasesView extends BasesView implements HoverParent
 
 	readonly type = radarView;
 	private containerEl: HTMLElement;
+	private gridContainer: HTMLElement;
+	cards: RadarCard[] = [];
 
 	constructor(controller: QueryController, parentEl: HTMLElement) 
 	{
 		super(controller);
 		this.containerEl = parentEl.createDiv('bases-radar-container');
+		this.gridContainer = this.containerEl.createDiv('bases-radar-grid');
 	}
 
 	public onDataUpdated(): void 
 	{
 		const { app } = this;
+		this.destroyCharts();
+
+		/* FETCHING CONFIGURATION OPTIONS */
+		const range = parseInt(this.config.get('range') as string);
+		const divisions = this.config.get('divisions') as number;
+		const chartWidth = this.config.get('chartWidth') as number;
+
+		const theme = this.extractThemeColors(); 
 		const order = this.config.getOrder();
 
-		this.containerEl.empty(); // I would like to not rely on this I think
+		/* ------------------------------ */
 
-		const radarContainer = this.containerEl;
-		const containerWidth = this.config.get('chartWidth') as number;
+		if (this.gridContainer) {
+			this.gridContainer.style.setProperty('--chart-width', `${chartWidth}px`);
+		}
 
-		for (const group of this.data.groupedData) 
-		{ // Handles the "grouping" of entries through the bases view. If no groups set; returns one group
-			
-			// TODO: Handling for group headers
+		this.cards = this.processData(divisions, range, chartWidth, theme, order);
+		this.renderInitialLayout(chartWidth);
+	}
 
-			const cardsGrid = radarContainer.createDiv('bases-radar-grid');
+	private chartInstances: Chart[] = [];
 
-			for (const entry of group.entries) 
-			{ // Each group.entries is each row in the bases view (ie. one note)
+	async onClose() {
+        this.destroyCharts();
+    }
+
+	 private destroyCharts() {
+        this.chartInstances.forEach(chart => chart.destroy());
+        this.chartInstances = [];
+    }
+
+	private extractThemeColors() {
+		const bodyStyles = window.getComputedStyle(document.body);
+
+		const bgPrimary = bodyStyles.getPropertyValue('--background-primary').trim();
+		const bgSecondary = bodyStyles.getPropertyValue('--background-secondary').trim();
+		const accentColor1 = bodyStyles.getPropertyValue('--color-accent-1').trim();
+		const accentColor2 = bodyStyles.getPropertyValue('--color-accent-2').trim();
+		const gridColor = bodyStyles.getPropertyValue('--text-faint').trim();
+		const textMuted = bodyStyles.getPropertyValue('--text-muted').trim();
+
+		return {bgPrimary, bgSecondary, accentColor1, accentColor2, gridColor, textMuted};
+	}
+
+	private processData(
+		divisions: number,
+		range: number,
+		width: number,
+		theme: any,
+		order: (`note.${string}` | `formula.${string}` | `file.${string}`)[]
+	): RadarCard[] {
+		const processedCards: RadarCard[] = [];
+
+		for (const group of this.data.groupedData) { // Groups from the 'Sort and Group' panel
+			for (const entry of group.entries) { // Each entry is one note
+				// TODO: Add group handling logic
 				
-				const cardItem = cardsGrid.createDiv('bases-radar-item');
-				
-				const canvas = cardItem.createEl('canvas', { 
-                    cls: 'bases-radar-chart' 
-				});
-				canvas.width = containerWidth;
-
-				const divisions = this.config.get('divisions') as number;
-
-				let radarLabels: string[] = [];
-				let radarData: number[] = [];
+				// 1. Process data into information
+				const radarLabels: string[] = [];
+				const radarData: number[] = [];
+				const listItems: any[] = [];
 				let i = 0;
 
-				for (const propertyName of order) 
-				{
+				for (const propertyName of order) {
 					const { type, name } = parsePropertyId(propertyName);
 					const value = entry.getValue(propertyName);
 					
-					if (i < divisions)
-					{
-						// Coerce value to a number; many Obsidian value types are primitives at runtime
-						const numeric = Number(value);
-						if (!isNaN(numeric))
-						{
-							radarLabels.push(name);
-							radarData.push(numeric);
-							i++;
-						} else {
-							createRadarProperty(cardItem, name, value, type);
-						}
+					
+					if ((i < divisions) && (!isNaN(Number(value)))) {
+						radarLabels.push(name);
+						radarData.push(Number(value));
+						i++;
 					} else {
-						createRadarProperty(cardItem, name, value, type);
+						listItems.push({
+							name: name,
+							value: value != null ? value.toString() : "",
+							// add a set of type-checks that determines the data type needed to be displayed
+						});
 					}
 				}
 
-				let range = parseInt(this.config.get('range') as string);
-
-				// FETCHING THEME COLORS TO STYLE THE CHART
-				var bodyStyles = window.getComputedStyle(document.body);
-				var bgPrimary = bodyStyles.getPropertyValue('--background-primary').trim();
-				var bgSecondary = bodyStyles.getPropertyValue('--background-secondary').trim();
-				var accentColor = bodyStyles.getPropertyValue('--color-accent-hsl').trim();
-				var accentColor1 = bodyStyles.getPropertyValue('--color-accent-1').trim();
-				var accentColor2 = bodyStyles.getPropertyValue('--color-accent-2').trim();
-				var gridColor = bodyStyles.getPropertyValue('--text-faint').trim();
-
-				// Adding opacity to accentColor2 because it is returned as an HSL calculation
-				let accentColor2HSLA = accentColor2
-					.replace("hsl", "hsla")
-					.replace(/\)\s*$/, `, 0.6)`);
-
+				// 2. Setup Chart Config
 				const data = {
 					labels: radarLabels,
 					datasets: [{
-						label: 'Count',
+						label: '',
 						data: radarData as any,
 						fill: true,
-						backgroundColor: `hsla(${accentColor}, 0.2)`,
-						borderColor: accentColor2HSLA,
+						backgroundColor: `hsla(${interfaceColors.accentColor}, 0.2)`,
+						borderColor: interfaceColors.accentColor2HSLA,
 					}]
 				}
 				const config: ChartConfiguration = {
 					type: 'radar', 
-					data: data,
+					data: {
+						labels: radarLabels, 
+						datasets: [{
+							label: '', 
+							data: radarData, 
+							fill: true, 
+							backgroundColor: theme.accentColor1,
+							borderColor: theme.borderColor,
+						}]
+					},
 					options: {
 						responsive: true,
 						animation: false,
+						maintainAspectRatio: false,
 						scales: {
 							r: {
 								min: 0,
-								max: range,
-								grid: {
-									color: gridColor + '66',
-								},
-								angleLines: {
-									color: gridColor + '66',
-								},
+								max: isNaN(range) ? undefined : range,
+								grid: { color: theme.gridColor},
+								angleLines: { color: theme.gridColor },
 								ticks: {
 									display: true,
 									showLabelBackdrop: false,
-									color: gridColor,
+									color: theme.textMuted,
 									stepSize: isNaN(range) ? undefined : Math.ceil(range / 5),
 								}
 							}
 						}, 
 						plugins: {
-							legend: {
-								display: false
-							}
+							legend: { display: false },
 						}
 					}
-				}
-			
-				if (isNaN(range)){
-					config.options!.scales!.r!.max = undefined;
-				}
+				};
 				
-				new Chart(canvas, config);
-
+				// 3. Push to our State Array
+				processedCards.push({
+					id: Math.random().toString(), 
+					chartConfig: config, // Stores all charted properties
+					listItems: listItems, // Stores all other properties
+					layout: { x: 0, y: 0, width: width, height: 0 } // Sets up the basic layout data
+				});
 			}
 		}
-	}
-}
-
-/**
- * Creates a radar property element.
- * @param {HTMLElement} container - The parent element to append to (e.g., cardItem).
- * @param {string} name - The label text for the property.
- * @param {any} value - The value to display.
- * @param {string} type - The type of item (used for conditional styling).
- */
-function createRadarProperty(container: HTMLElement, name: string, value: any, type: BasesPropertyType) {
-	const propEl = container.createDiv('bases-radar-property');
-
-	propEl.createDiv({
-		cls: 'bases-radar-label',
-		text: name
-	});
-
-	const lineEl = propEl.createDiv('bases-radar-line');
-
-	// specific check to ensure null/undefined doesn't print "null"
-	if(value == 'null')
-	{
-		lineEl.setText('–');
-		lineEl.addClass('null-value');
-	} else {
-		lineEl.setText(value.toString()); 
+		return processedCards;
 	}
 
-	// Conditional styling logic
-	if (name === 'name' && type === 'file') {
-		propEl.addClass('mod-title');
-	}
-	
-	// TODO: Add handling for tags, multitext lists, long	text list with ...
+	private renderInitialLayout(chartWidth: number) {
+		if (!this.gridContainer) return; // Check if it exists first
+        this.gridContainer.empty(); // Only empty the grid, not the whole view
 
-	return propEl; // Returning the element is useful if you need to modify it further later
+		this.cards.forEach((card, index) => {
+            const cardEl = this.gridContainer!.createDiv('bases-radar-item');
+				card.el = cardEl;
+            
+            // Store the ID in the DOM for easy lookup later
+            cardEl.dataset.id = card.id;
+
+				const canvasContainer = cardEl.createEl('div', {cls: 'radar-chart-container'})
+				const canvas = canvasContainer.createEl('canvas', { cls: 'bases-radar-chart' });
+            new Chart(canvas, card.chartConfig);
+
+				card.listItems.forEach(prop => {
+                const propEl = cardEl.createDiv('bases-radar-property');
+
+					// Here is where we would add special handling for specific types 
+
+                propEl.createDiv({ cls: 'bases-radar-label', text: prop.name });
+                propEl.createDiv({ cls: 'bases-radar-line', text: prop.value });
+            });
+        });
+	}
 }
