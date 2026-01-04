@@ -9,12 +9,17 @@ If your plugin does not need CSS, delete this file.
 
 .bases-radar-container {
     background-color: var(--background-primary);
+    height: 100%;
+    width: 100%;
+    overflow-y: auto;
     padding: var(--size-4-3);
 }
 
 
 .bases-radar-grid {
-    position: relative;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--chart-width, 200px), 1fr));
+    gap: 12px;
     width: 100%;
 }
 
@@ -22,11 +27,10 @@ If your plugin does not need CSS, delete this file.
     display: flex;             /* Enable Flexbox */
     flex-direction: column;    /* Stack children vertically */
 
-    position: absolute;
+    position: relative;
     box-sizing: border-box;
     /* width will be set by JS */
 
-    will-change: transform;
     transition: box-shadow var(--anim-duration-fast) ease-in-out;
 
     border-radius: var(--radius-m); /* Sets the rounded corners */
@@ -34,6 +38,7 @@ If your plugin does not need CSS, delete this file.
     box-shadow: var(--bases-cards-shadow);
  
     overflow: hidden;
+    height: auto;
     /*contain: strict;*/
 }
 
@@ -62,12 +67,24 @@ If your plugin does not need CSS, delete this file.
 
 .bases-radar-line .longText{
   display: -webkit-box;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .radar-chart-container {
-    aspect-ratio: 1 / 1;
-    background-color: var(--bases-cards-cover-background);
+    width: 100%;
+    aspect-ratio: 1 / 1; 
+    position: relative;
+    overflow: hidden;
+    display: block;
+}
+
+.bases-radar-chart {
+    /* Absolute positioning breaks the resize loop */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
 }

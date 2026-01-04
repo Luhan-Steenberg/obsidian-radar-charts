@@ -109,14 +109,11 @@ export class MyBasesView extends BasesView implements HoverParent
 	private gridContainer: HTMLElement;
 	cards: RadarCard[] = [];
 
-	private onResizeDebounced: () => void;
-
 	constructor(controller: QueryController, parentEl: HTMLElement) 
 	{
 		super(controller);
 		this.containerEl = parentEl.createDiv('bases-radar-container');
 		this.gridContainer = this.containerEl.createDiv('bases-radar-grid');
-		this.onResizeDebounced = debounce(this.calculateGridPositions.bind(this), 100, true);
 	}
 
 	public onDataUpdated(): void 
@@ -134,13 +131,12 @@ export class MyBasesView extends BasesView implements HoverParent
 
 		/* ------------------------------ */
 
+		if (this.gridContainer) {
+			this.gridContainer.style.setProperty('--chart-width', `${chartWidth}px`);
+		}
+
 		this.cards = this.processData(divisions, range, chartWidth, theme, order);
 		this.renderInitialLayout(chartWidth);
-	}
-
-	public onResize(): void {
-    // Standard Obsidian method that fires when the view pane is resized
-    this.onResizeDebounced();
 	}
 
 	private chartInstances: Chart[] = [];
@@ -264,7 +260,6 @@ export class MyBasesView extends BasesView implements HoverParent
 	}
 
 	private renderInitialLayout(chartWidth: number) {
-
 		if (!this.gridContainer) return; // Check if it exists first
         this.gridContainer.empty(); // Only empty the grid, not the whole view
 
@@ -288,50 +283,5 @@ export class MyBasesView extends BasesView implements HoverParent
                 propEl.createDiv({ cls: 'bases-radar-line', text: prop.value });
             });
         });
-
-		  requestAnimationFrame(() => {
-            this.calculateGridPositions();
-        });
 	}
-	private calculateGridPositions() {
-		if (!this.gridContainer) return;
-
-		const containerWidth = this.gridContainer.clientWidth;
-
-		const minChartWidth = this.config.get('chartWidth') as number; 
-		const gap = 12;
-
-		let colCount = Math.floor((containerWidth + gap) / (minChartWidth + gap));
-		colCount = Math.max(1, colCount); // Safety: Always at least 1 column
-		const realChartWidth = (containerWidth - ((colCount - 1) * gap)) / colCount;
-
-		const startOffset = 0;
-
-		const firstCard = this.cards[0];
-		if (!firstCard || !firstCard.el) return;
-		
-		for (const card of this.cards) {if (card.el) card.el.style.width = `${realChartWidth}px`;} // Width-setting loop
-	 
-		const cardHeight = firstCard.el.offsetHeight;
-		const rowHeight = cardHeight + gap;
-
-        // THE LOOP
-
-		  for (let i = 0; i < this.cards.length; i++) {
-        const card = this.cards[i];
-        if (!card.el) continue;
-
-        const colIndex = i % colCount;
-        const rowIndex = (i - colIndex) / colCount; // Integer math trick
-
-        const x = colIndex * (realChartWidth + gap);
-        const y = rowIndex * rowHeight;
-
-        card.el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-    }
-
-		const totalRows = Math.ceil(this.cards.length / colCount);
-		const containerHeight = totalRows * (cardHeight + gap);
-		this.gridContainer.style.height = `${containerHeight}px`;
-   }
 }
